@@ -3,6 +3,9 @@
 function Biltorvet($) {
     var vehicleSearch = $(document).find('.bdt .vehicle_search');
     var vehicleSearchResults = $(document).find('.bdt .vehicle_search_results');
+    var root_url = "";
+    var frontpageSearch = document.getElementById("frontpage_vehicle_search");
+    var frontpageSearchButton = document.getElementById("vehicle_search_frontpage_button");
     var searchFilterOptionsXHR = null;
     var loadingAnimation = vehicleSearch.find('.lds-ring');
     var makesFilter = null;
@@ -27,6 +30,11 @@ function Biltorvet($) {
         Ascending: null, // Bool
         BrandNew: null // Bool
     };
+
+    if(frontpageSearch)
+    {
+        root_url = document.getElementById("root_url").textContent;
+    }
 
     if(vehicleSearch.length > 0 && vehicleSearch.data('makeids'))
     {
@@ -176,7 +184,16 @@ function Biltorvet($) {
                         vehicleSearch.find('select[name=productType]').removeAttr('disabled');
                     }
 
-                    vehicleSearch.find('.search').text(vehicleSearch.find('.search').data('labelpattern').replace('%u', response.totalResults));
+                    // The frontpage search doesn't respect language settings - refactoring needed
+                    if(frontpageSearch)
+                    {
+                        frontpageSearchButton.setAttribute("data-labelpattern", "Vis " + response.totalResults + " resultater");
+                        frontpageSearchButton.innerText = "Vis " + response.totalResults + " resultater";
+                    }
+                    else
+                    {
+                        vehicleSearch.find('.search').text(vehicleSearch.find('.search').data('labelpattern').replace('%u', response.totalResults));
+                    }
 
                     if(consumptionRangeSlider !== null)
                     {
@@ -337,12 +354,23 @@ function Biltorvet($) {
             urlPathElements[2] = 1;
         }
 
+        if(frontpageSearch)
+        {
+            urlPathElements[1] = root_url
+            urlPathElements[2] = 1;
+        }
+
         for (var i = 1; i < urlPathElements.length; i++ ) {
             if (urlPathElements[i] !== null) {
                 urlstring += '/' + urlPathElements[i];
             }
-
         }
+
+        if(frontpageSearch)
+        {
+            urlstring = urlstring.substr(1);
+        }
+
         return urlstring;
     }
 
@@ -443,7 +471,7 @@ function FormatPrice(x, suffix)
 
 jQuery(function($) {
     var bdt = new Biltorvet($);
-    
+
     $(document)
         .on('change', '.bdtSlider', function(e){
             var min = e.value.newValue[0];
@@ -461,13 +489,13 @@ jQuery(function($) {
             {
                 max = '';
             }
-            
+
             $(this).closest('.bdtSliderContainer')
                 .find('.bdtSliderMinVal')
-                    .text(min)
+                .text(min)
                 .end()
                 .find('.bdtSliderMaxVal')
-                    .text(max);
+                .text(max);
         })
         .on('slideStop', '.bdtSlider', function(e){
             // var min = e.value[0];
