@@ -3,6 +3,7 @@
 namespace Biltorvet\Controller;
 
 use Biltorvet\Factory\PriceFactory;
+use Biltorvet\Factory\VehicleFactory;
 use Biltorvet\Helper\WordpressHelper;
 use Biltorvet\Model\Price;
 use Biltorvet\Model\Vehicle;
@@ -91,7 +92,7 @@ class PriceController
                 $this->prioritizedPriceType = 'leasing';
                 if ($this->price->getIsBusinessLeasing()) {
                     return $this->formatValue(
-                        $this->price->getLeasingPriceValue() - $this->price->getLeasingVatValue()
+                        $this->price->getLeasingPriceValue()
                     ) . $this->monthlyPostFix;
                 } else {
                     return $this->formatValue($this->price->getLeasingPriceValue()) . $this->monthlyPostFix;
@@ -105,6 +106,26 @@ class PriceController
         }
 
         return $this->noPriceValue;
+    }
+
+    /**
+     * @return string
+     */
+    public function showCashPriceFinance()
+    {
+        if (!$this->hideFinancingCards && $this->price->getFinancingValue()) {
+
+            if($this->prioritizedPriceType = 'financing' && $this->formatValue($this->price->getPriceValue()) != null)
+            {
+                return _e('Cash price', 'biltorvet-dealer-tools') . ': ' . $this->formatValue($this->price->getPriceValue());
+            }
+            else {
+                return "<br>";
+            }
+        }
+        else {
+            return "<br>";
+        }
     }
 
     /**
