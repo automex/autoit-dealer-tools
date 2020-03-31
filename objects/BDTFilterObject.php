@@ -17,6 +17,14 @@
         public $Limit;
         public $OrderBy;
         public $HideSoldVehicles; // Bool
+        public $HideLeasingVehicles; // Bool
+        public $HideFlexLeasingVehicles; // Bool
+        public $HideWarehousesaleVehicles; // Bool
+        public $HideExportVehicles; // Bool
+        public $HideRentalVehicles; // Bool
+        public $HideCommissionVehicles; // Bool
+        public $HideUpcomingVehicles; // Bool
+        public $HideWholesaleVehicles; // Bool
         public $HideADVehicles; // Bool
         public $HideBIVehicles; // Bool
         public $Ascending; // Bool
