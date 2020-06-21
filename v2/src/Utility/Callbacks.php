@@ -57,6 +57,9 @@ class Callbacks
         if (isset($atts['propellant'])){
             $searchFilter->setPropellants([ucfirst($atts['propellant'])]);
         }
+        if(isset($atts['companyid'])) {
+            $searchFilter->setCompanyIds([ucfirst($atts['companyid'])]);
+        }
 
         wp_enqueue_style("bdt_style");
         return $this->templateController->load(
@@ -91,6 +94,7 @@ class Callbacks
             case 'Rental' : $label = 2; break;
             case 'Commission' : $label = 27; break;
             case 'Wholesale' : $label = 9; break;
+            case "Bus" : $label = 416; break;
         }
 
         wp_enqueue_style("bdt_style");
@@ -98,6 +102,35 @@ class Callbacks
             'vehicleCardWrapper.php',
             [
                 'vehicles' => DataHelper::filterVehiclesByLabel($this->apiController->getVehicles($searchFilter), $label),
+                'basePage' => WordpressHelper::getOptions(1)['vehiclesearch_page_id'],
+            ],
+            true
+        );
+    }
+
+    public function get_vehicles_by_type_shortcode($atts)
+    {
+        $searchFilter = new SearchFilter();
+
+        if(!isset($atts['type']))
+        {
+            return 'Please set a type.' . '<br><br>' . 'Check the documentation for valid types.';
+        }
+
+        $SetType = ucfirst($atts['type']);
+
+        switch ($SetType) {
+            case 'Car': $typeId = 1; break;
+            case 'Van': $typeId = 2; break;
+            case 'Motorcycle': $typeId = 7; break;
+            case 'Truck' : $typeId = 4; break;
+        }
+
+        wp_enqueue_style("bdt_style");
+        return $this->templateController->load(
+            'vehicleCardWrapper.php',
+            [
+                'vehicles' => DataHelper::filterVehiclesByType($this->apiController->getVehicles($searchFilter), $typeId),
                 'basePage' => WordpressHelper::getOptions(1)['vehiclesearch_page_id'],
             ],
             true
