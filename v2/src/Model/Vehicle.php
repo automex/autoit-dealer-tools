@@ -50,6 +50,10 @@ class Vehicle
      */
     private $automatic;
     /**
+     * @var bool|null
+     */
+    private $brandNew;
+    /**
      * @var string|null
      */
     private $propellant;
@@ -73,6 +77,10 @@ class Vehicle
      * @var string[]|null
      */
     private $images;
+    /**
+     * @var string|null
+     */
+    private $vehicleCardImage;
     /**
      * @var Property[]|null
      */
@@ -283,6 +291,24 @@ class Vehicle
     }
 
     /**
+     * @return bool|null
+     */
+    public function getBrandNew(): ?bool
+    {
+        return $this->brandNew;
+    }
+
+    /**
+     * @param  bool|null $automatic
+     * @return Vehicle
+     */
+    public function setBrandNew(?bool $brandNew): Vehicle
+    {
+        $this->brandNew = $brandNew;
+        return $this;
+    }
+
+    /**
      * @return string|null
      */
     public function getPropellant(): ?string
@@ -483,6 +509,24 @@ class Vehicle
     /**
      * @return string|null
      */
+    public function getVehicleCardImage(): ?string
+    {
+        return $this->vehicleCardImage;
+    }
+
+    /**
+     * @param  string|null $vehicleCardImage
+     * @return Vehicle
+     */
+    public function setVehicleCardImage(?string $vehicleCardImage): Vehicle
+    {
+        $this->vehicleCardImage = $vehicleCardImage;
+        return $this;
+    }
+
+    /**
+     * @return string|null
+     */
     public function getUri(): ?string
     {
         return $this->uri;
@@ -514,5 +558,66 @@ class Vehicle
     {
         $this->companyId = $companyId;
         return $this;
+    }
+
+    // Sort labels for better use on vehiclecards
+    public static function sortVehicleLabels(?array $labels) : array
+    {
+        $vehicleLabels = array();
+
+        if ($labels) {
+            foreach($labels as $label) {
+
+                // DealerSpecificLabel
+                if($label->getKey() == 427)
+                {
+                    $vehicleLabels[1] = 'Carlite Forhandler Label';
+                }
+
+                if($label->getKey() == 11)
+                {
+                    $vehicleLabels[2] = 'Nyhed';
+                }
+
+                if($label->getKey() == 5)
+                {
+                    $vehicleLabels[3] = 'Solgt';
+                }
+
+                if($label->getKey() == 99999)
+                {
+                    $vehicleLabels[4] = 'Fabriksny';
+                }
+
+                if($label->getKey() == 12)
+                {
+                    $vehicleLabels[5] = 'Leasing';
+                }
+
+                if($label->getKey() == 9)
+                {
+                    $vehicleLabels[6] = 'Engros';
+                }
+
+                if($label->getKey() == 382)
+                {
+                    $vehicleLabels[7] = 'Eksport';
+                }
+
+                if($label->getKey() == 26)
+                {
+                    $vehicleLabels[8] = 'Lagersalg';
+                }
+                if($label->getKey() == 1)
+                {
+                    $vehicleLabels[9] = 'Demo';
+                }
+            }
+        }
+
+        // We need the array in ascending order
+        ksort($vehicleLabels);
+
+        return $vehicleLabels;
     }
 }

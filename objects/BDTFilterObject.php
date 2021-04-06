@@ -13,6 +13,7 @@
         public $PriceMax;
         public $ConsumptionMin;
         public $ConsumptionMax;
+        public $VehicleStates;
         public $Start;
         public $Limit;
         public $OrderBy;
@@ -20,6 +21,7 @@
         public $HideLeasingVehicles; // Bool
         public $HideFlexLeasingVehicles; // Bool
         public $HideWarehousesaleVehicles; // Bool
+        public $HideCarLiteDealerLabelVehicles; // Bool
         public $HideExportVehicles; // Bool
         public $HideRentalVehicles; // Bool
         public $HideCommissionVehicles; // Bool
@@ -30,6 +32,7 @@
         public $HideByTypeMotorcycle; // Bool
         public $HideByTypeTruck; // Bool
         public $HideByTypeBus; // Bool
+        public $HideBrandNewVehicles; // Bool
         public $HideADVehicles; // Bool
         public $HideBIVehicles; // Bool
         public $Ascending; // Bool

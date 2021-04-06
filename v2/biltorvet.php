@@ -3,7 +3,7 @@
  * Plugin Name:       Biltorvet
  * Plugin URI:        http://www.biltorvet.as/hjemmesider
  * Description:       Tools providing connection to AutoDesktop, and other Biltorvet services.
- * Version:           0.0.1
+ * Version:           2.2.4
  * Requires at least: 5.2
  * Requires PHP:      7.2
  * Author:            Biltorvet A/S
@@ -29,16 +29,18 @@ define('LABEL_NEW', 11);
 define('LABEL_FEATURED', 10);
 define('LABEL_LEASING', 12);
 define('LABEL_WAREHOUSESALE', 26);
+define('LABEL_CARLITEDEALERLABEL', 427);
 define('LABEL_FLEXLEASING', 198);
 define('LABEL_EXPORT', 382);
 define('LABEL_UPCOMING', 4);
 define('LABEL_RENTAL', 2);
 define('LABEL_COMMISION', 27);
 define('LABEL_ENGROS', 9);
+define('LABEL_NEWCAR', 99999);
+define('LABEL_DEMO', 1);
 
 // Special label for Thybo Biler
 define('LABEL_BUS', 416);
-
 
 // @TODO: Refactor.
 //  As the data for price calculations are pretty messy we try to map it more logically before working with it.

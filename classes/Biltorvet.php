@@ -11,6 +11,7 @@ class Biltorvet
     private $_options;
     private $_options_2;
     private $_options_3;
+    private $_options_4;
     private $biltorvetAPI;
 
     public function __construct()
@@ -24,6 +25,7 @@ class Biltorvet
         add_action('wp_enqueue_scripts', array(&$this, 'bdt_register_styles'));
         add_action('plugins_loaded', array(&$this, 'bdt_load_plugin_textdomain'));
         add_filter('query_vars', array(&$this, 'bdt_query_vars'));
+        add_filter('wp_mail', array(&$this, 'bdt_adt_send_lead'), 1);
         add_action('parse_request', array(&$this, 'bdt_parse_request'), 1);
         add_filter('pre_get_document_title', array(&$this, 'bdt_title'), 1000);
         add_filter('wp_title', array(&$this, 'bdt_title'), 1000);
@@ -33,6 +35,7 @@ class Biltorvet
         $this->_options = get_option('bdt_options');
         $this->_options_2 = get_option('bdt_options_2');
         $this->_options_3 = get_option('bdt_options_3');
+        $this->_options_4 = get_option('bdt_options_4');
 
         if ($this->_options['api_key'] === null || trim($this->_options['api_key']) === '') {
            add_action('admin_notices', array(&$this, 'bdt_error_noapikey'));
@@ -40,12 +43,12 @@ class Biltorvet
             $this->biltorvetAPI = new BiltorvetAPI($this->_options['api_key']);
             new Ajax($this->biltorvetAPI);
             if (!is_admin()) {
-                new BiltorvetShortcodes($this->biltorvetAPI, $this->_options, $this->_options_2);
+                new BiltorvetShortcodes($this->biltorvetAPI, $this->_options, $this->_options_2, $this->_options_4);
             }
         }
 
         if (is_admin()) {
-            new BDTSettingsPage($this->_options, $this->_options_2, $this->_options_3);
+            new BDTSettingsPage($this->_options, $this->_options_2, $this->_options_3, $this->_options_4);
         }
     }
 
@@ -91,22 +94,6 @@ class Biltorvet
         global $wp_query;
         global $wp;
 
-        // Check if this is a car search, and if it is, make it non-cacheable
-        if (isset($wp_query->post->ID) && $wp_query->post->ID === intval($this->_options['vehiclesearch_page_id'])) {
-            // Make sure that the search page, which is volatile,  does not get indexed.
-            if (!has_action('wp_no_robots') && !has_action('noindex')) {
-                wp_no_robots();
-            }
-            ?>
-            <meta http-equiv="cache-control" content="max-age=0"/>
-            <meta http-equiv="cache-control" content="no-cache"/>
-            <meta http-equiv="expires" content="0"/>
-            <meta http-equiv="expires" content="Tue, 01 Jan 1980 1:00:00 GMT"/>
-            <meta http-equiv="pragma" content="no-cache"/>
-            <?php
-            return;
-        }
-
         $vehicleId = get_query_var('bdt_vehicle_id', -1);
         if ($vehicleId === -1) {
             return;
@@ -127,55 +114,125 @@ class Biltorvet
         <meta property="og:image:height" content="768"/><?php
     }
 
-        public function bdt_adt_send_lead( $args )
+    public function bdt_adt_send_lead( $args )
+    {
+        global $ActivityType;
+        $replyTo = '';
+        if(array_key_exists('headers', $args))
         {
-            global $ActivityType;
-            $replyTo = '';
-            if(array_key_exists('headers', $args))
+            foreach($args['headers'] as $header)
             {
-                foreach($args['headers'] as $header)
+                preg_match('/^Reply-To: ".*" <(.+)>$/', $header, $matches);
+                if(count($matches) > 1)
                 {
-                    preg_match('/^Reply-To: ".*" <(.+)>$/', $header, $matches);
-                    if(count($matches) > 1)
-                    {
-                        $replyTo = $matches[1];
-                        break;
-                    }
+                    $replyTo = $matches[1];
+                    break;
                 }
             }
-            if($replyTo === '')
+        }
+//        if($replyTo === '')
+//        {
+//            wp_die( '<div class="et_pb_contact_error_text">' . sprintf( __('Could not send the lead: %s', 'biltorvet-dealer-tools'), 'No Reply-To header found.') . '</div>' );
+//        }
+        $query = parse_url( $_SERVER['HTTP_REFERER'], PHP_URL_QUERY);
+        parse_str( $query, $queryParams );
+
+        if(!isset($queryParams) || !isset($queryParams['bdt_vehicle_id']) || !isset($queryParams['bdt_actiontype']))
+        {
+            return;
+        }
+        if(!in_array($queryParams['bdt_actiontype'], $ActivityType))
+        {
+            return sprintf( __('Unrecognized CTA type. Allowed types: %s', 'biltorvet-dealer-tools'), implode(', ', $ActivityType));
+        }
+
+        try{
+            $vehicle = $this->biltorvetAPI->GetVehicle($queryParams['bdt_vehicle_id']);
+        } catch(Exception $e) {
+            return $e->getMessage();
+        }
+
+        $lead = new LeadInputObject();
+
+        $firstReg = $this->biltorvetAPI->GetPropertyValue($vehicle, '1. indregistreringsdato');
+        $lead->FirstRegistrationDate = isset($firstReg) ?  date('Y-m-d H:i:s', strtotime($firstReg)) : '';
+        $lead->Type = $vehicle->type;
+        //$lead->Type = $this->biltorvetAPI->GetPropertyValue($vehicle, 'Personbil') === 'Personbil' ? 'ja' : 'Andet'; // TODO: Jace this needs fixing, but it will require some more substantial work on the API side.
+        $lead->Model = TextUtils::GetVehicleIdentification($vehicle);
+        $lead->CompanyId = $vehicle->company->id;
+        $lead->ActivityType = $queryParams['bdt_actiontype'];
+        $lead->Email = $replyTo;
+
+        foreach($_POST as $key => $value)
+        {
+            if(strpos($key, 'bdtname') !== false)
             {
-                wp_die( '<div class="et_pb_contact_error_text">' . sprintf( __('Could not send the lead: %s', 'biltorvet-dealer-tools'), 'No Reply-To header found.') . '</div>' ); 
+                $lead->Name = $value;
             }
-            $query = parse_url( $_SERVER['HTTP_REFERER'], PHP_URL_QUERY);
-            parse_str( $query, $queryParams );
-            
-            if(!isset($queryParams) || !isset($queryParams['bdt_vehicle_id']) || !isset($queryParams['bdt_actiontype']))
+            if(strpos($key, 'Email') !== false)
             {
-                return $args;
+                $lead->Email = $value;
             }
-            if(!in_array($queryParams['bdt_actiontype'], $ActivityType))
+            if(strpos($key, 'bdtpostalcode') !== false)
             {
-                return sprintf( __('Unrecognized CTA type. Allowed types: %s', 'biltorvet-dealer-tools'), implode(', ', $ActivityType));
+                $lead->PostalCode = $value;
             }
-
-            try{
-                $vehicle = $this->biltorvetAPI->GetVehicle($queryParams['bdt_vehicle_id']);
-            } catch(Exception $e) {
-                return $e->getMessage();
+            if(strpos($key, 'bdtcity') !== false)
+            {
+                $lead->City = $value;
             }
+            if(strpos($key, 'bdtphone') !== false)
+            {
+                $lead->CellPhoneNumber = $value;
+            }
+            if(strpos($key, 'bdtrequestedtestdrivedatetime') !== false)
+            {
+                $lead->RequestedTestdriveDateTime = date('Y-m-d H:i:s', strtotime($value));
+            }
+            if(strpos($key, 'bdtrequestedday') !== false)
+            {
+                $day = intval($value);
+            }
+            if(strpos($key, 'bdtrequestedtime') !== false)
+            {
+                $time = $value;
+            }
+        }
 
-           $lead = new LeadInputObject();
-            $lead->Model = TextUtils::GetVehicleIdentification($vehicle);
+        if(isset($day))
+        {
+            $lead->RequestedTestdriveDateTime = date('Y-m-d H:i:s', strtotime('+' . $day . ' day'));
+        }
 
+        if(isset($day) && isset($time))
+        {
+            if(strlen($time) === 4)
+            {
+                $time = '0' . $time;
+            }
+            $lead->RequestedTestdriveDateTime = date('Y-m-d', strtotime($lead->RequestedTestdriveDateTime)) . ' ' . $time .':00';
+        }
 
-            // Some e-mail clients don't respect the reply-to header, and then we lose the information about sender. For this reason, we are gluing the sender e-mail back to the e-mail body.
-            $args['message'] .= "\r\n\r\n" .  sprintf( __('Lead sender: %s', 'biltorvet-dealer-tools'), $replyTo);
+        // Some e-mail clients don't respect the reply-to header, and then we lose the information about sender. For this reason, we are gluing the sender e-mail back to the e-mail body.
+        $args['message'] .= "\r\n\r\n" .  sprintf( __('Lead sender: %s', 'biltorvet-dealer-tools'), $replyTo);
 
-            // Append the vehicle info to the WP email.
-            $args['message'] .= "\r\n\r\n" .  sprintf( __('Selected vehicle: %s', 'biltorvet-dealer-tools'), $lead->Model . ' (' . $vehicle->id . ')');
+        // Append the vehicle info to the WP email.
+        $args['message'] .= "\r\n\r\n" .  sprintf( __('Selected vehicle: %s', 'biltorvet-dealer-tools'), $lead->Model . ' (' . $vehicle->id . ')');
 
-            return $args;
+        $args['message'] .= "\r\n\r\n" . "Email afsendt fra: " . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
+
+        $lead->Body = $args['message'];
+
+        try{
+            $sendLead = $this->biltorvetAPI->AutodesktopSendLead($lead, isset($this->_options['adt_email_receipt']) && $this->_options['adt_email_receipt'] === "on");
+        } catch(Exception $e) {
+            // If wp_die() is called and the dealer doesn't accepts lead to ADT no mail will be sent.
+            // Every dealers get an email AND a lead in ADT if "send leads to ADT" is activated. They shouldn't get an email unless it's checked in the plugin settings.
+            //wp_die( '<div class="et_pb_contact_error_text">' . sprintf( __('Could not send the lead: %s', 'biltorvet-dealer-tools'), $e->getMessage()) . '</div>' );
+        }
+
+        return $args;
+
         }
 
         public function bdt_register_scripts()
@@ -186,8 +243,10 @@ class Biltorvet
             wp_register_script( 'bootstrap_slider', plugins_url('scripts/bootstrap-slider.min.js',  dirname(__FILE__) ) , array('jquery'), '1.0.1', true );
             wp_register_script( 'bdt_vimeo', 'https://player.vimeo.com/api/player.js', '2.11.0', true );
             wp_register_script( 'hammerjs', 'https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js', null, '2.0.8', true );
+
             wp_register_script( 'bt_slideshow', 'https://source.autoit.dk/slideshow/v1.0.5/slideshow.min.js', array('hammerjs', 'jquery', 'bdt_vimeo'), '1.0.5', true );
             wp_register_script( 'bdt_script', plugins_url('scripts/biltorvet.min.js',  dirname(__FILE__) ) , array('jquery', 'bootstrap_slider'), '1.0.1', true );
+
             wp_localize_script( 'bdt_script', 'ajax_config', array( 'ajax_url' => admin_url( 'admin-ajax.php' ) ) );
             wp_register_script( 'search_script', plugins_url('scripts/search.js',  dirname(__FILE__) ) , array('jquery'), '1.0.0', true );
             wp_localize_script( 'search_script', 'ajax_config', array( 'ajax_url' => admin_url( 'admin-ajax.php' ) ) );
@@ -209,9 +268,10 @@ class Biltorvet
 
         public function bdt_register_session()
         {
-            if (!session_id())
+            if (session_id() == '')
                 session_start();
         }
+
         public function bdt_load_plugin_textdomain() {
             load_plugin_textdomain( 'biltorvet-dealer-tools', FALSE, basename( dirname(dirname( __FILE__ )) ) . '/languages' );
         }
@@ -243,7 +303,7 @@ class Biltorvet
             if($postId != $vehicleSearchPage && !in_array($postId, $vehicleSearchPageAncestors))
             {
                 return;
-            }   
+            }
             Biltorvet::bdt_refresh_rewrite_rules();
         }
 

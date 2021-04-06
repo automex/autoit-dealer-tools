@@ -33,6 +33,10 @@ class SearchFilter
      * @var string[]
      */
     public $ProductTypes;
+    /**
+     * @var string[]
+     */
+    public $NewUsed;
 
     /**
      * @var int
@@ -88,6 +92,11 @@ class SearchFilter
      * @var boolean
      */
     public $HideWarehousesaleVehicles; // Bool
+
+    /**
+     * @var boolean
+     */
+    public $HideCarLiteDealerLabelVehicles; // Bool
 
     /**
      * @var boolean
@@ -269,6 +278,24 @@ class SearchFilter
     public function setProductTypes(array $ProductTypes): SearchFilter
     {
         $this->ProductTypes = $ProductTypes;
+        return $this;
+    }
+
+    /**
+     * @return string[]
+     */
+    public function getNewUsed(): array
+    {
+        return $this->NewUsed;
+    }
+
+    /**
+     * @param  string[] $NewUsed
+     * @return SearchFilter
+     */
+    public function setNewUsed(array $NewUsed): SearchFilter
+    {
+        $this->NewUsed = $NewUsed;
         return $this;
     }
 
@@ -467,6 +494,24 @@ class SearchFilter
     public function setHideWarehousesaleVehicles(bool $HideWarehousesaleVehicles): SearchFilter
     {
         $this->HideWarehousesaleVehicles = $HideWarehousesaleVehicles;
+        return $this;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isHideCarLiteDealerLabelVehicles(): bool
+    {
+        return $this->HideCarLiteDealerLabelVehicles;
+    }
+
+    /**
+     * @param  bool $HideCarLiteDealerLabelVehicles
+     * @return SearchFilter
+     */
+    public function setHideCarLiteDealerLabelVehicles(bool $HideCarLiteDealerLabelVehicles): SearchFilter
+    {
+        $this->HideCarLiteDealerLabelVehicles = $HideCarLiteDealerLabelVehicles;
         return $this;
     }
 

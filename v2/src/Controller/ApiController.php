@@ -76,7 +76,7 @@ class ApiController
     public function getOrderByValues()
     {
         try {
-            return $this->requestApi('/vehicle/orderbyvalues', [], 'orderbyValues');
+            return $this->requestApi('vehicle/orderbyvalues', [], 'orderbyValues');
         } catch (Exception $e) {
         }
     }
@@ -97,6 +97,8 @@ class ApiController
             'sendLead',
             'POST'
         );
+
+        var_dump($respone);
 
         return $respone;
     }
